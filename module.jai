@@ -5,6 +5,5 @@
 #load "mixer.jai";
 #load "engine.jai";
 
-using Math :: #import "jay_math";
-using ECS :: #import "jay_ecs";
+using Math :: #import "Jay_Math";
 

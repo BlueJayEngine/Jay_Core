@@ -15,9 +15,16 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
         for procs {
             in_args := NewArray(it.args.count, string,, temp);
             for arg, index: it.args {
-                arg_type_index := <<cast(*u64)*arg;
-                array_add_if_unique(*type_indices, arg_type_index);
-                in_args[index] = sprint("arg%: type_%", index, arg_type_index);
+                if (cast(*Type_Info)arg).type == .POINTER {
+                    arg_info := cast(*Type_Info_Pointer)arg;
+                    arg_type_index := cast(u64)arg_info.pointer_to;
+                    array_add_if_unique(*type_indices, arg_type_index);
+                    in_args[index] = sprint("arg%: *type_%", index, arg_type_index);
+                } else {
+                    arg_type_index := <<cast(*u64)*arg;
+                    array_add_if_unique(*type_indices, arg_type_index);
+                    in_args[index] = sprint("arg%: type_%", index, arg_type_index);
+                }
             }
             in_args_string := join(..in_args, ", ",, temp);
             find_or_add(*calls, sprint("% :: (%)", it.name, in_args_string));
@@ -61,7 +68,7 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
                         }
 
                         if !is_valid {
-                            print("\x1b[31m[Error] This mixer have specified list of procedures. The procedure \x1b[0m'%.%(...)'\x1b[31m is skipped because it's not in a list!\x1b[0m\n", it.name, member.name);
+                            // print("\x1b[31m[Error] This mixer have specified list of procedures. The procedure \x1b[0m'%.%(...)'\x1b[31m is skipped because it's not in a list!\x1b[0m\n", it.name, member.name);
                             continue;   
                         }
                     }
@@ -76,10 +83,18 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
 
 
                     for arg, index: proc_info.argument_types {
-                        arg_type_index := cast(u64)arg;
-                        array_add_if_unique(*type_indices, arg_type_index);
-                        in_args[index] = sprint("arg%: type_%",index, arg_type_index);
-                        args[index] = sprint("arg%",index);
+                        if (arg.type == .POINTER) {
+                            arg_info := cast(*Type_Info_Pointer)arg;
+                            arg_type_index := cast(u64)arg_info.pointer_to;
+                            array_add_if_unique(*type_indices, arg_type_index);
+                            in_args[index] = sprint("arg%: *type_%",index, arg_type_index);
+                            args[index] = sprint("arg%",index);
+                        } else {
+                            arg_type_index := cast(u64)arg;
+                            array_add_if_unique(*type_indices, arg_type_index);
+                            in_args[index] = sprint("arg%: type_%",index, arg_type_index);
+                            args[index] = sprint("arg%",index);
+                        }
                         
                     }
                     in_args_string := join(..in_args, ", ",, temp);
