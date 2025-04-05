@@ -8,7 +8,17 @@ Packages :: #bake_arguments Mixer(procs=.[
     .{"before_end",     .[*Engine]},
     .{"end",            .[*Engine]},
     .{"after_end",      .[*Engine]}
-]);
+], _deps = .[
+    Lifecycle.Input,
+    Lifecycle.Simulation,
+    Lifecycle.Render
+] );
+
+Lifecycle :: struct {
+    Input :: struct {}
+    Simulation :: struct { after: Input; }
+    Render :: struct { after: Simulation; }
+}
 
 Timer :: struct {
     time: float64;

@@ -1,10 +1,15 @@
-Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
+Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type = deps_dummy)  {
     #insert -> string {
 
         #import "Hash_Table";
         
-        nodes := sort(mixins);
-        // defer array_free(nodes);
+        unsorted: [..]Type;
+        array_add(*unsorted, ..mixins);
+        array_add(*unsorted, .._deps);
+
+        nodes := sort(unsorted);
+
+        log("Mixins is: %", nodes);
 
         builder: String_Builder = .{};
 
@@ -32,12 +37,7 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
 
         for mix_t, n_index: nodes {
             it := cast(*Type_Info_Struct)mix_t;
-            success, n_index := array_find(mixins, mix_t);
 
-            if !success {
-                print("\x1b[31m[Error] Unable to find node:\x1b[0m %\n", it);
-                continue;
-            }
             for member, m_index: it.members {
                 if member.flags == .CONSTANT && member.type.type == .PROCEDURE {
                     proc_info := cast(*Type_Info_Procedure) member.type;
@@ -123,6 +123,7 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy)  {
 #scope_file
 
 procs_dummy :[0]Proc_Item: .[];
+deps_dummy :[0]Type: .[];
 
 Proc_Item :: struct {
     name: string;
@@ -144,9 +145,9 @@ Node_Info :: struct {
     edges: [..] s64;
 }
 
-sort :: ($mixins: []Type) -> [mixins.count]Type {
-    result : [mixins.count] Type;
-    nodes : [mixins.count] Node_Info;
+sort :: (mixins: []Type) -> []Type {
+    result := NewArray(mixins.count, Type);
+    nodes := NewArray(mixins.count, Node_Info);
     
     for mixin, m_index: mixins {
         m_info := cast(*Type_Info_Struct)mixin;
@@ -162,7 +163,7 @@ sort :: ($mixins: []Type) -> [mixins.count]Type {
                     continue;
                 }
                 if !is_listed {
-                    print("\x1b[31m[Error] % is not a mixer item, but declared as 'after' in\x1b[0m '%'\n", type, m_info.name);
+                    print("\x1b[31m[Error] % is not a mixer item, but declared as 'before' in\x1b[0m '%'\n", type, m_info.name);
                     continue;
                 }
 
