@@ -6,4 +6,5 @@
 #load "engine.jai";
 
 using Math :: #import "Jay_Math";
+using Logger :: #import "Jay_Logger";
 

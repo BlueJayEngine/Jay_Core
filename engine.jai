@@ -9,15 +9,15 @@ Packages :: #bake_arguments Mixer(procs=.[
     .{"end",            .[*Engine]},
     .{"after_end",      .[*Engine]}
 ], _deps = .[
-    Lifecycle.Input,
-    Lifecycle.Simulation,
-    Lifecycle.Render
+    Lifecycle.InputComplete,
+    Lifecycle.SimulationComplete,
+    Lifecycle.RenderComplete
 ] );
 
 Lifecycle :: struct {
-    Input :: struct {}
-    Simulation :: struct { after: Input; }
-    Render :: struct { after: Simulation; }
+    InputComplete :: struct {}
+    SimulationComplete :: struct { after: InputComplete; }
+    RenderComplete :: struct { after: SimulationComplete; }
 }
 
 Timer :: struct {

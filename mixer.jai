@@ -1,20 +1,30 @@
-Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type = deps_dummy)  {
+// procs_dummy :: Proc_Item.[];
+// deps_dummy :: Type.[];
+
+Proc_Item :: struct {
+    name: string;
+    args: []Type;
+}
+
+Mixer :: struct (in_mixins: ..Type, procs: []Proc_Item, _deps: []Type)  {
+    mixins :: #run -> []Type {
+        result: [..]Type;
+        array_add(*result, ..in_mixins);
+        array_add(*result, .._deps);
+        return result;
+    }
     #insert -> string {
 
         #import "Hash_Table";
-        
-        unsorted: [..]Type;
-        array_add(*unsorted, ..mixins);
-        array_add(*unsorted, .._deps);
 
-        nodes := sort(unsorted);
+        nodes := sort(mixins);
 
         log("Mixins is: %", nodes);
 
         builder: String_Builder = .{};
 
         calls: Table(string, String_Builder) = .{};
-        
+
         type_indices: [..]u64;
 
         for procs {
@@ -35,13 +45,17 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type
             find_or_add(*calls, sprint("% :: (%)", it.name, in_args_string));
         }
 
-        for mix_t, n_index: nodes {
+        for mix_t: nodes {
+            success, n_index := array_find(mixins, mix_t);
+
+            assert(success);
+
             it := cast(*Type_Info_Struct)mix_t;
 
             for member, m_index: it.members {
                 if member.flags == .CONSTANT && member.type.type == .PROCEDURE {
                     proc_info := cast(*Type_Info_Procedure) member.type;
-                    
+
                     if procs.count > 0 {
                         args: [..] Type;
 
@@ -62,14 +76,14 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type
                                 if it.args[index] != item.args[index] then continue;
                             }
                             if equal(it.name, item.name) {
-                                is_valid = true; 
+                                is_valid = true;
                                 break;
                             }
                         }
 
                         if !is_valid {
                             // print("\x1b[31m[Error] This mixer have specified list of procedures. The procedure \x1b[0m'%.%(...)'\x1b[31m is skipped because it's not in a list!\x1b[0m\n", it.name, member.name);
-                            continue;   
+                            continue;
                         }
                     }
 
@@ -95,13 +109,13 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type
                             in_args[index] = sprint("arg%: type_%",index, arg_type_index);
                             args[index] = sprint("arg%",index);
                         }
-                        
+
                     }
                     in_args_string := join(..in_args, ", ",, temp);
                     args_string := join(..args, ", ",, temp);
-                    
+
                     append(find_or_add(*calls, sprint("% :: (%)", member.name, in_args_string)), sprint("\t\tmixins[%].%(%);\n", n_index, member.name, args_string,, temp));
-                } 
+                }
             }
         }
 
@@ -114,21 +128,13 @@ Mixer :: struct (mixins: ..Type, procs: []Proc_Item = procs_dummy, _deps: []Type
                 print_to_builder(*builder, "\t% {\n%\n\t}\n", type, builder_to_string(*call));
             }
         }
-        
+
         return builder_to_string(*builder);
     }
 }
 
 
 #scope_file
-
-procs_dummy :[0]Proc_Item: .[];
-deps_dummy :[0]Type: .[];
-
-Proc_Item :: struct {
-    name: string;
-    args: []Type;
-}
 
 
 operator == :: inline (a: Proc_Item, b: Proc_Item) -> bool {
@@ -148,7 +154,7 @@ Node_Info :: struct {
 sort :: (mixins: []Type) -> []Type {
     result := NewArray(mixins.count, Type);
     nodes := NewArray(mixins.count, Node_Info);
-    
+
     for mixin, m_index: mixins {
         m_info := cast(*Type_Info_Struct)mixin;
         nodes[m_index].value = mixin;
@@ -200,7 +206,7 @@ sort :: (mixins: []Type) -> []Type {
                     nodes[edge].heat -= 1;
                 }
                 break;
-            } 
+            }
         }
     }
     return result;
